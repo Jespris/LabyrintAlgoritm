@@ -9,6 +9,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Random;
 
 
@@ -54,6 +56,10 @@ class MazeComponent extends JComponent {
     protected int cellHeight;
     Random random;
 
+	private boolean[] alreadyDoneArray;
+
+	private int cellsCompleted;
+
     // Draw a maze of size w*h with c*c cells
     MazeComponent(int w, int h, int c) {
         super();
@@ -64,6 +70,9 @@ class MazeComponent extends JComponent {
 		height = c*cellHeight;
 		setPreferredSize(new Dimension(width+1,height+1));  // Add 1 pixel for the border
 		random = new Random();
+		alreadyDoneArray = new boolean[cells * cells];
+		Arrays.fill(alreadyDoneArray, false);
+		cellsCompleted = 0;
     }
     
     public void paintComponent(Graphics g) {
@@ -90,8 +99,7 @@ class MazeComponent extends JComponent {
     }
 
     private void createMaze (int cells, Graphics g) {
-	
-	// TODO: this
+
 		DisjointSet disjointSet = new DisjointSet(cells*cells);
 		int randomCell;
 		GetNeighbour neighbour;
@@ -100,7 +108,10 @@ class MazeComponent extends JComponent {
 		int root1;
 		int root2;
 		do {
-			randomCell = random.nextInt(cells*cells);
+			do {
+				randomCell = random.nextInt(cells*cells);
+			} while (!alreadyDone(randomCell));
+
 			// System.out.println("New random cell: " + randomCell);
 			neighbour = getNeighbour(randomCell);
 			// System.out.println("Neighbour: " + neighbour.getCellIndex());
@@ -114,7 +125,6 @@ class MazeComponent extends JComponent {
 				drawWall(col, row, neighbour.getWallIndex(), g);  // un-draw the wall
 			}
 		} while (!mazeIsComplete(disjointSet));
-	
     }
 
 	private GetNeighbour getNeighbour(final int cell) {
@@ -167,6 +177,16 @@ class MazeComponent extends JComponent {
 		return new GetNeighbour(direction, neighbour);
 	}
 
+	private boolean alreadyDone(final int cell){
+		if (alreadyDoneArray[cell]){
+			return true;
+		} else {
+			alreadyDoneArray[cell] = true;
+			cellsCompleted++;
+			return false;
+		}
+	}
+
 	private int getRow(final int index){
 		return Math.floorDiv(index, cells);
 	}
@@ -176,14 +196,16 @@ class MazeComponent extends JComponent {
 	}
 
 	private boolean mazeIsComplete(final DisjointSet disjointSet) {
-		int rootsIndex = disjointSet.Find(0);
+		/*
 		for (int i=0; i<disjointSet.getSize(); i++){
 			if (disjointSet.Find(i) != rootsIndex){
 				// System.out.println("Not same root found at index: " + i);
 				return false;
 			}
 		}
-		return true;
+
+		 */
+		return cellsCompleted >= cells * cells - 1;
 	}
 
 
