@@ -16,7 +16,7 @@ public class Ex1 {
     private static final int WIDTH = 800;  // Size of the window in pixels
     private static final int HEIGHT = 800;
     
-    static int cells=20;    // The size of the maze is cells*cells (default is 20*20)
+    static int cells=100;    // The size of the maze is cells*cells (default is 20*20)
     
     public static void main(String[] args) {
 	
@@ -65,6 +65,7 @@ class MazeComponent extends JComponent {
 		width =  c*cellWidth;     // Calculate exact dimensions of the component
 		height = c*cellHeight;
 		setPreferredSize(new Dimension(width+1,height+1));  // Add 1 pixel for the border
+		random = new Random();
     }
     
     public void paintComponent(Graphics g) {
@@ -92,12 +93,103 @@ class MazeComponent extends JComponent {
 
     private void createMaze (int cells, Graphics g) {
 	
-	// This is what you write
+	// TODO: this
+		DisjointSet disjointSet = new DisjointSet(cells*cells);
+		int randomCell;
+		GetNeighbour neighbour;
+		int col;
+		int row;
+		int root1;
+		int root2;
+		do {
+			randomCell = random.nextInt(cells*cells);
+			// System.out.println("New random cell: " + randomCell);
+			neighbour = getNeighbour(randomCell);
+			// System.out.println("Neighbour: " + neighbour.getCellIndex());
+			root1 = disjointSet.Find(randomCell);  // root of random cell set
+			root2 = disjointSet.Find(neighbour.getCellIndex()); // root of neighbour set
+			if (root1 != root2){
+				// union and remove wall between them
+				col = getCol(randomCell);
+				row = getRow(randomCell);
+				disjointSet.Union(root1, root2);  // make the cells part of same disjoint set
+				drawWall(col, row, neighbour.getWallIndex(), g);  // un-draw the wall
+			}
+		} while (!mazeIsComplete(disjointSet));
 	
     }
 
+	private GetNeighbour getNeighbour(final int cell) {
+		int neighbour = -1;
+		int direction;
 
-    // Paints the interior of the cell at postion x,y with colour c
+		direction = random.nextInt(4);
+		if (direction == 1){
+			// up
+			if (getRow(cell) == 0){
+				// upper wall, opposite wall is down
+				neighbour = cell + cells;
+				direction = 3;
+			} else {
+				neighbour = cell - cells;
+			}
+		}
+		if (direction == 3){
+			// down
+			if (getRow(cell) == cells - 1){
+				// lower wall, opposite is up
+				neighbour = cell - cells;
+				direction = 1;
+			} else {
+				neighbour = cell + cells;
+			}
+		}
+		if (direction == 0){
+			// left
+			if (getCol(cell) == 0){
+				// left wall, opposite is right
+				neighbour = cell + 1;
+				direction = 2;
+			} else {
+				neighbour = cell - 1;
+			}
+		}
+		if (direction == 2){
+			// right
+			if (getCol(cell) == cells - 1){
+				// right wall, opposite is left
+				neighbour = cell - 1;
+				direction = 0;
+			} else {
+				neighbour = cell + 1;
+			}
+		}
+
+		assert neighbour != -1;
+		return new GetNeighbour(direction, neighbour);
+	}
+
+	private int getRow(final int index){
+		return Math.floorDiv(index, cells);
+	}
+
+	private int getCol(final int index){
+		return index % cells;
+	}
+
+	private boolean mazeIsComplete(final DisjointSet disjointSet) {
+		int rootsIndex = disjointSet.Find(0);
+		for (int i=0; i<disjointSet.getSize(); i++){
+			if (disjointSet.Find(i) != rootsIndex){
+				// System.out.println("Not same root found at index: " + i);
+				return false;
+			}
+		}
+		return true;
+	}
+
+
+	// Paints the interior of the cell at postion x,y with colour c
     private void paintCell(int x, int y, Color c, Graphics g) {
 		int xpos = x*cellWidth;    // Position in pixel coordinates
 		int ypos = y*cellHeight;
@@ -107,11 +199,11 @@ class MazeComponent extends JComponent {
 
     
     // Draw the wall w in cell (x,y) (0=left, 1=up, 2=right, 3=down)
-    private void drawWall(int x, int y, int w, Graphics g) {
-		int xpos = x*cellWidth;    // Position in pixel coordinates
-		int ypos = y*cellHeight;
+    private void drawWall(int col, int row, int wallSide, Graphics g) {
+		int xpos = col*cellWidth;    // Position in pixel coordinates
+		int ypos = row*cellHeight;
 
-		switch (w) {
+		switch (wallSide) {
 			case (0) ->       // Wall to the left
 					g.drawLine(xpos, ypos + 1, xpos, ypos + cellHeight - 1);
 			case (1) ->       // Wall at top
