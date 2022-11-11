@@ -9,8 +9,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Random;
 
 
@@ -18,7 +16,7 @@ public class Ex1 {
     private static final int WIDTH = 800;  // Size of the window in pixels
     private static final int HEIGHT = 800;
     
-    static int CELLS_IN_ROW = 10;    // The size of the maze is cells*cells (default is 20*20)
+    static int CELLS_IN_ROW = 100;    // The size of the maze is cells*cells (default is 20*20)
 
 
     
@@ -58,17 +56,6 @@ class MazeComponent extends JComponent {
     protected int cellHeight;
     Random random;
 
-	private int[] alreadyDoneArray;// = new int[cells*cells];
-
-	/*
-	public void createDoneArray() {
-		for (int i = 0; i >= cells*cells; i++) {
-			alreadyDoneArray[i] = -1;
-		}
-	}*/
-
-
-
     // Draw a maze of size w*h with c*c cells
     MazeComponent(int w, int h, int c) {
         super();
@@ -79,8 +66,6 @@ class MazeComponent extends JComponent {
 		height = c*cellHeight;
 		setPreferredSize(new Dimension(width+1,height+1));  // Add 1 pixel for the border
 		random = new Random();
-
-
     }
     
     public void paintComponent(Graphics g) {
@@ -107,57 +92,16 @@ class MazeComponent extends JComponent {
     }
 
     private void createMaze (int cells, Graphics g) {
-
 		DisjointSet disjointSet = new DisjointSet(cells*cells);
-		int randomCell = random.nextInt(cells*cells);
+		int randomCell;
 		GetNeighbour neighbour;
 		int col;
 		int row;
 		int root1;
 		int root2;
-		int iterationCounter = 0;
-		int iterationCounter2 = 0;
-		alreadyDoneArray = new int[cells*cells];
-		Arrays.fill(alreadyDoneArray, -1);
-		System.out.println("Array element one: " + alreadyDoneArray[0]);
+
 		do {
-
-
-			if(isArrayFull()) {
-				System.out.println("isArrayFull() returns true.");
-				break;
-			}
-
-
-
-				if (alreadyDone(randomCell)){
-
-					for (int i = 0; i < cells * cells; i++) {
-						if (alreadyDoneArray[i] == -1) {
-							int current = randomCell;
-							do {
-								randomCell = random.nextInt(cells*cells);
-								iterationCounter++;
-								System.out.println("Randomizer loop has run " + iterationCounter + " times.");
-							} while (randomCell == current);
-							System.out.println("Randomizer loop has run " + iterationCounter + " times and stopped.");
-
-						}
-					}
-				}
-/*
-				do {
-					randomCell = random.nextInt(cells*cells);
-					iterationCounter++;
-					System.out.println("Randomizer loop has run " + iterationCounter + " times.");
-				} while (!alreadyDone(randomCell, first));
-
-				first = false;
-				System.out.println("Randomizer loop has run " + iterationCounter + " times and stopped.");
-				*/
-
-
-
+			randomCell = random.nextInt(cells*cells);
 			// System.out.println("New random cell: " + randomCell);
 			neighbour = getNeighbour(randomCell);
 			// System.out.println("Neighbour: " + neighbour.getCellIndex());
@@ -169,15 +113,8 @@ class MazeComponent extends JComponent {
 				row = getRow(randomCell);
 				disjointSet.Union(root1, root2);  // make the cells part of same disjoint set
 				drawWall(col, row, neighbour.getWallIndex(), g);  // un-draw the wall
-
 			}
-			iterationCounter2++;
-			System.out.println("Execution loop has run " + iterationCounter2 + " times.");
-		} while (!mazeIsComplete());
-		System.out.println("Execution loop has run " + iterationCounter2 + " times and stopped.");
-
-
-
+		} while (!mazeIsComplete(disjointSet));
     }
 
 	private GetNeighbour getNeighbour(final int cell) {
@@ -230,34 +167,6 @@ class MazeComponent extends JComponent {
 		return new GetNeighbour(direction, neighbour);
 	}
 
-	private boolean alreadyDone(final int cell){
-
-
-/*
-		if (isItFirstTime) {
-			alreadyDoneArray = new int[cells*cells];
-			Arrays.fill(alreadyDoneArray, -1);
-		}
-		*/
-
-
-		if (alreadyDoneArray[cell] == cell && alreadyDoneArray[cell] != -1){
-			//System.out.println("Current element being treated: " + alreadyDoneArray[cell]);
-			return true;
-
-		} else {
-			alreadyDoneArray[cell] = cell;
-
-			for (int i = 0; i < cells*cells; i++) {
-
-				System.out.println("Array element " + i + " is: " + alreadyDoneArray[i]);
-			}
-
-
-			return false;
-		}
-	}
-
 	private int getRow(final int index){
 		return Math.floorDiv(index, cells);
 	}
@@ -266,60 +175,17 @@ class MazeComponent extends JComponent {
 		return index % cells;
 	}
 
+	private boolean mazeIsComplete(final DisjointSet disjointSet) {
 
-	private boolean isArrayFull(){
+		final int rootsIndex = disjointSet.Find(0);
 
-		int vacancyCounter = 0;
-		int elementCounter = 0;
-
-		System.out.println("isArrayFull() executing... ");
-		for (int i = 0; i < cells*cells; i++) {
-			System.out.println("Array element " + i + " is: " + alreadyDoneArray[i]);
-			if (alreadyDoneArray[i] != -1) {
-				elementCounter++;
-			}
-			else {
-				vacancyCounter++;
-			}
-			System.out.println("Number of elements currently: " + elementCounter);
-			System.out.println("Number of vacancies currently: " + vacancyCounter);
-		}
-
-		int countSum = elementCounter + vacancyCounter;
-
-		for (int i = 0; i < cells*cells; i++) {
-			if (alreadyDoneArray[i] == -1) {
-				System.out.println("isArrayFull() returning false. Array counter sum: " + countSum);
-				return false;
-			}
-			if (countSum==cells*cells) {
-				System.out.println("isArrayFull() returning true. Array counter sum: " + countSum);
-				return true;
-			}
-		}
-
-		System.out.println("isArrayFull() returning false. Array counter sum: " + countSum);
-		return false;
-
-	}
-
-	private boolean mazeIsComplete() {  //final DisjointSet disjointSet
-		/*
-		for (int i=0; i<disjointSet.getSize(); i++){
+		for (int i=1; i<disjointSet.getSize(); i++){
 			if (disjointSet.Find(i) != rootsIndex){
 				// System.out.println("Not same root found at index: " + i);
 				return false;
 			}
 		}
-
-		 */
-
-		if (isArrayFull()) {
-			System.out.println("isArrayFull() returns true.");
-			return true;
-		}
-
-		return false;
+		return true;
 	}
 
 
