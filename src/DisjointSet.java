@@ -2,40 +2,34 @@ package src;
 
 import java.util.Arrays;
 
-public class DisjointSet implements DisjointSetInterface{
-    private final int[] group;
-
-
+public final class DisjointSet implements DisjointSetInterface{
+    private final int[] s;  // our set, name doesn't matter
     public DisjointSet(final int size) {
-        this.group = new int[size];
-        Arrays.fill(group, -1);
+        this.s = new int[size];
+        Arrays.fill(s, -1); // initialize all values as -1, since all indexes are roots with size itself, aka -1
     }
 
     @Override
     public void Union(int root1, int root2) {
-        assert group[root1] < 0 && group[root2] < 0;
-        if (this.group[root2] < group[root1]){
+        assert s[root1] < 0 && s[root2] < 0;
+        if (this.s[root2] < s[root1]){  // Union by size
             // sizes are negative
-            group[root2] += group[root1];  // add sizes
-            group[root1] = root2;  // root2 becomes new root
+            s[root2] += s[root1];  // add sizes
+            s[root1] = root2;  // root2 becomes new root
         } else {
             // root 1 is larger tree
-            group[root1] += group[root2];
-            group[root2] = root1;
+            s[root1] += s[root2];  // add sizes
+            s[root2] = root1;  // root1 becomes new root
         }
     }
 
     @Override
     public int Find(int index) {
-        if (group[index] < 0){
-            // index is a root, return it
+        // this method found in moodle
+        if (s[index] < 0){
+            // index is a root, return it back up the recursion
             return index;
         }
-        return group[index] = Find(group[index]);
-    }
-
-    @Override
-    public int getSize() {
-        return group.length;
+        return s[index] = Find(s[index]);  // path compression, recursively get parent index value
     }
 }

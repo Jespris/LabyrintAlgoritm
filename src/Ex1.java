@@ -66,9 +66,9 @@ class MazeComponent extends JComponent {
 		height = c*cellHeight;
 		setPreferredSize(new Dimension(width+1,height+1));  // Add 1 pixel for the border
 		random = new Random();
-    }
+	}
     
-    public void paintComponent(Graphics g) {
+    public void paintComponent(final Graphics g) {
 		g.setColor(Color.yellow);                    // Yellow background
 		g.fillRect(0, 0, width, height);
 
@@ -88,106 +88,108 @@ class MazeComponent extends JComponent {
 		drawWall(cells-1, cells-1, 2, g);            // Open up exit cell
 
 		g.setColor(Color.yellow);                 // Use yellow lines to remove existing walls
-		createMaze(cells, g);
+		createMaze(g);
     }
 
-    private void createMaze (int cells, Graphics g) {
+    private void createMaze (final Graphics g) {
+		// helper methods for this method are found in region "HELPER METHODS IN CREATE MAZE" below
+
+		final float startTime = System.nanoTime();  // documents current system time in nanoseconds
+
+		// declare variables used in the while loop below
+		int cellsRemaining = cells * cells - 1;  // nr of cells in maze
 		DisjointSet disjointSet = new DisjointSet(cells*cells);
 		int randomCell;
 		GetNeighbour neighbour;
-		int col;
-		int row;
 		int root1;
 		int root2;
 
-		do {
-			randomCell = random.nextInt(cells*cells);
-			// System.out.println("New random cell: " + randomCell);
-			neighbour = getNeighbour(randomCell);
-			// System.out.println("Neighbour: " + neighbour.getCellIndex());
+		while (cellsRemaining > 0){  // loop while we haven't checked all cell indexes
+
+			randomCell = random.nextInt(cells*cells);  // get a random int in range(0, size of maze)
+			neighbour = getNeighbour(randomCell);  // get a random neighbour of the random cell
 			root1 = disjointSet.Find(randomCell);  // root of random cell set
 			root2 = disjointSet.Find(neighbour.getCellIndex()); // root of neighbour set
+
 			if (root1 != root2){
 				// union and remove wall between them
-				col = getCol(randomCell);
-				row = getRow(randomCell);
 				disjointSet.Union(root1, root2);  // make the cells part of same disjoint set
-				drawWall(col, row, neighbour.getWallIndex(), g);  // un-draw the wall
-			}
-		} while (!mazeIsComplete(disjointSet));
-    }
+				cellsRemaining--;  // this cell is now done, we can decrement the cellsRemaining counter
 
-	private GetNeighbour getNeighbour(final int cell) {
+				drawWall( getCol(randomCell), getRow(randomCell), neighbour.getWallIndex(), g);  // un-draw the wall
+			}
+		}
+
+		// Prints out roots of entrance and exit to make sure we did things correctly
+		System.out.println("Entrance: " + disjointSet.Find(0));
+		System.out.println("Exit: " + disjointSet.Find(cells * cells - 1));
+
+		final float endTime = System.nanoTime();  // used for printing execution time below:
+		System.out.println("Execution time: " + (endTime - startTime)/1000000 + "ms");
+    }
+	// region [HELPER METHODS IN CREATE MAZE]
+	private GetNeighbour getNeighbour(final int cellIndex) {
+		// method for getting a random neighbour given a cell index
 		int neighbour = -1;
 		int direction;
 
 		direction = random.nextInt(4);
 		if (direction == 1){
 			// up
-			if (getRow(cell) == 0){
+			if (getRow(cellIndex) == 0){
 				// upper wall, opposite wall is down
-				neighbour = cell + cells;
+				neighbour = cellIndex + cells;
 				direction = 3;
 			} else {
-				neighbour = cell - cells;
+				neighbour = cellIndex - cells;
 			}
 		}
 		if (direction == 3){
 			// down
-			if (getRow(cell) == cells - 1){
+			if (getRow(cellIndex) == cells - 1){
 				// lower wall, opposite is up
-				neighbour = cell - cells;
+				neighbour = cellIndex - cells;
 				direction = 1;
 			} else {
-				neighbour = cell + cells;
+				neighbour = cellIndex + cells;
 			}
 		}
 		if (direction == 0){
 			// left
-			if (getCol(cell) == 0){
+			if (getCol(cellIndex) == 0){
 				// left wall, opposite is right
-				neighbour = cell + 1;
+				neighbour = cellIndex + 1;
 				direction = 2;
 			} else {
-				neighbour = cell - 1;
+				neighbour = cellIndex - 1;
 			}
 		}
 		if (direction == 2){
 			// right
-			if (getCol(cell) == cells - 1){
+			if (getCol(cellIndex) == cells - 1){
 				// right wall, opposite is left
-				neighbour = cell - 1;
+				neighbour = cellIndex - 1;
 				direction = 0;
 			} else {
-				neighbour = cell + 1;
+				neighbour = cellIndex + 1;
 			}
 		}
 
 		assert neighbour != -1;
+		// we need to return both the neighbour cell index and wall side, hence the class
 		return new GetNeighbour(direction, neighbour);
 	}
 
 	private int getRow(final int index){
+		// helper method to find row given an index
 		return Math.floorDiv(index, cells);
 	}
 
-	private int getCol(final int index){
+	private int getCol(final int index) {
+		// helper method to find column given an index
 		return index % cells;
 	}
-
-	private boolean mazeIsComplete(final DisjointSet disjointSet) {
-
-		final int rootsIndex = disjointSet.Find(0);
-
-		for (int i=1; i<disjointSet.getSize(); i++){
-			if (disjointSet.Find(i) != rootsIndex){
-				// System.out.println("Not same root found at index: " + i);
-				return false;
-			}
-		}
-		return true;
-	}
-
+	// endregion
 
 	// Paints the interior of the cell at position x,y with colour c
     private void paintCell(int x, int y, Color c, Graphics g) {
